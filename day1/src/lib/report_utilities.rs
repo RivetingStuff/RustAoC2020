@@ -51,7 +51,6 @@ pub fn process_file_contents(contents: &String) -> Result<Vec<i32>, Box<dyn Erro
 
     for record in csv_file.records() {
         let result = record?;
-        println!("{:?}", result);
         for field in result.iter() {
             result_vec.push(field.parse::<i32>()?);
         }
@@ -61,6 +60,47 @@ pub fn process_file_contents(contents: &String) -> Result<Vec<i32>, Box<dyn Erro
     Ok(result_vec)
 }
 
+/// Searches vector of i32 values for pairs whose sum matches the target value
+/// 
+/// *Will panic if no candidates are found* 
+/// 
+/// # Arguements:
+/// 
+/// * `report_vector` - A vector reference containing i32 values
+/// * `target` - A i32 value that candidate pairs must sum to
+///
+/// # Examples:
+/// 
+/// ``` rust
+/// let result = lib::report_utilities::find_sum_candidates(&vec![1,1,2], 3).unwrap();
+/// assert_eq!(result, vec![(1,2), (1,2)], "Actual candidate vector doesn't match expected vector");
+/// ```
+/// ``` rust, should_panic
+/// // Duplicate pairs will not be added, regardless of order. This code will panic
+/// let result = lib::report_utilities::find_sum_candidates(&vec![1,1,2], 3).unwrap();
+/// assert_eq!(result, vec![(1,2), (1,2), (2,1), (2,1)], "Actual candidate vector doesn't match expected vector");
+/// ```
+pub fn find_sum_candidates(report_vector: &Vec<i32>, target: i32) -> Result<Vec<(i32, i32)>, Box<dyn Error>> { 
+    let mut candidates : Vec<(i32, i32)> = Vec::new();
+    let mut known_indexes : Vec<(usize, usize)> = Vec::new();
+
+    for (index1, value1) in report_vector.iter().enumerate() {
+        for (index2, value2) in report_vector.iter().enumerate() {
+            let index_tuple = if index1 >= index2 {(index2, index1)} else {(index1, index2)};
+            if value1 + value2 == target && !known_indexes.contains(&index_tuple) { 
+                candidates.push((*value1, *value2));
+                known_indexes.push(index_tuple);
+
+            }
+        }
+    }
+    if candidates.is_empty() {
+        panic!("No candidate values found")
+    }
+    else {
+        Ok(candidates)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -127,11 +167,5 @@ mod tests {
     fn test_panic_on_missing_values() {
         let file_contents: String = String::new();
         process_file_contents(&file_contents).unwrap();
-    }
-
-    #[test]
-    #[ignore]
-    fn test_find_candidates() {
-        unimplemented!("Test Unimplemented");
     }
 }
